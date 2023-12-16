@@ -1,0 +1,8 @@
+name: myenv
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - numpy=1.26.2
+  - pandas=2.1.4
+  - dxpy=0.367.0
