@@ -1,4 +1,5 @@
 # set up conda environment for UKB RAP run
+source ~/miniconda3/etc/profile.d/conda.sh
 
 # check if conda environment ukb_rap exists
 echo "checking if ukb_rap environment exists..."
