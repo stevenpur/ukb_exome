@@ -65,4 +65,14 @@ dx run swiss-army-knife "${input_cmd[@]}" \
     --watch \
 
 # remove the filtered snps to save space
-#dx rm "${user_dir}/exom_teset/ukb22418_c${chr}_b0_v2_filtered*"
+for chr in {1..22}
+do
+    dx rm "${user_dir}/exom_test/ukb22418_c${chr}_b0_v2_qc.bed"
+    dx rm "${user_dir}/exom_test/ukb22418_c${chr}_b0_v2_qc.bim"
+    dx rm "${user_dir}/exom_test/ukb22418_c${chr}_b0_v2_qc.fam"
+    dx rm "${user_dir}/exom_test/ukb22418_c${chr}_b0_v2_qc_pruned.in"
+    dx rm "${user_dir}/exom_test/ukb22418_c${chr}_b0_v2_qc_pruned.out"
+    dx rm "${user_dir}/exom_test/ukb22418_c${chr}_b0_v2_qc_pruned.bed"
+    dx rm "${user_dir}/exom_test/ukb22418_c${chr}_b0_v2_qc_pruned.bim"
+    dx rm "${user_dir}/exom_test/ukb22418_c${chr}_b0_v2_qc_pruned.fam"
+done
