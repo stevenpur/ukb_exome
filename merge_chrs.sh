@@ -47,9 +47,9 @@ dx run swiss-army-knife "${input_cmd[@]}" \
     --priority normal
 
 # clean the intermediate files
-#dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged.bed"
-#dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged.bim"
-#dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged.fam"
-#dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged_qc.bed"
-#dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged_qc.bim"
-#dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged_qc.fam"
+dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged.bed"
+dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged.bim"
+dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged.fam"
+dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged_qc.bed"
+dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged_qc.bim"
+dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged_qc.fam"
