@@ -1,6 +1,8 @@
-###############################################
-# merged all chromosomes before the SNP QC
-###############################################
+# --------------------
+# Notes: This script is meant to produce the genotype data needed for step 1 of REGENIE.
+#        The script merge all chromosomes after the SNP QC and LD pruning. This is all done in DNA Nexus platform.
+# --------------------
+
 source ~/ukb_rap/config.sh
 
 # set input files and make a merge list for plink
@@ -28,6 +30,7 @@ plink_cmd="ls *bed | sed 's/.bed//g' > merge_list.txt
         --mind 0.1 \
         --geno 0.1 \
         --indep-pairwise 1000 100 0.9 \
+        --make-bed \
         --out ${output_file_qc}
     plink --bfile ${output_file_qc} \
         --extract ${output_file_qc}.prune.in \
@@ -44,7 +47,8 @@ dx run swiss-army-knife "${input_cmd[@]}" \
     --tag gt_preprocess \
     --yes \
     --watch \
-    --priority normal
+    --priority normal \
+    --wait
 
 # clean the intermediate files
 dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged.bed"
