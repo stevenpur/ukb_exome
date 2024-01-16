@@ -22,4 +22,5 @@ dx run swiss-army-knife \
     -icmd="${run_regeni_step1}" \
     --tag "regenie_step1" \
     --destination=${data_file_dir}/ \
-    --yes
+    --instance-type mem1_ssd1_v2_x36 \
+    --yes \
