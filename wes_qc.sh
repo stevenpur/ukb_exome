@@ -1,7 +1,7 @@
 # Run QC on exome seuqencing data
-
-exom_file_dir="/Bulk/Exome sequences/Population level exome OQFE variants, PLINK format - final release"
-data_file_dir="/users/stevenpur/exom_test"
+source(../config.sh)
+exom_plink_dir="/Bulk/Exome sequences/Population level exome OQFE variants, PLINK format - final release"
+data_file_dir="${user_dir}/exom_test"
 
 # QC on autosomes
 for chr in {1..22}; do
@@ -15,9 +15,9 @@ for chr in {1..22}; do
         --out wes_c${chr}_snps_qc_pass"
     
     dx run swiss-army-knife \
-        -iin="${exom_file_dir}/ukb23158_c${chr}_b0_v1.bed" \
-        -iin="${exom_file_dir}/ukb23158_c${chr}_b0_v1.bim" \
-        -iin="${exom_file_dir}/ukb23158_c${chr}_b0_v1.fam" \
+        -iin="${exom_plink_dir}/ukb23158_c${chr}_b0_v1.bed" \
+        -iin="${exom_plink_dir}/ukb23158_c${chr}_b0_v1.bim" \
+        -iin="${exom_plink_dir}/ukb23158_c${chr}_b0_v1.fam" \
         -icmd="${run_plink_wes}" \
         --tag "wes_qc" \
         --name "wes_qc_chr${chr}" \
@@ -25,6 +25,7 @@ for chr in {1..22}; do
         --instance-type mem1_ssd1_v2_x16 \
         --brief \
         --yes \
+        --wait # to monitor without submitting too many jobs at once
 
 done
 
@@ -41,9 +42,9 @@ do
         --out wes_c${chr}_snps_qc_pass"
     
     dx run swiss-army-knife \
-        -iin="${exom_file_dir}/ukb23158_c${chr}_b0_v1.bed" \
-        -iin="${exom_file_dir}/ukb23158_c${chr}_b0_v1.bim" \
-        -iin="${exom_file_dir}/ukb23158_c${chr}_b0_v1.fam" \
+        -iin="${exom_plink_dir}/ukb23158_c${chr}_b0_v1.bed" \
+        -iin="${exom_plink_dir}/ukb23158_c${chr}_b0_v1.bim" \
+        -iin="${exom_plink_dir}/ukb23158_c${chr}_b0_v1.fam" \
         -icmd="${run_plink_wes}" \
         --tag "wes_qc" \
         --name "wes_qc_chr${chr}"
