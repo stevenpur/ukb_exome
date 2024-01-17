@@ -21,6 +21,6 @@ dx run swiss-army-knife \
     -iin=${data_file_dir}/${pheno_prefix}.covar \
     -icmd="${run_regeni_step1}" \
     --tag "regenie_step1" \
-    --destination=${data_file_dir}/ \
+    --destination ${data_file_dir}/ \
     --instance-type mem1_ssd1_v2_x36 \
     --yes \
