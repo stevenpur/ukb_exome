@@ -46,28 +46,29 @@ perform_pca_analysis <- function(data_path) {
 # install the packages needed for the analysis
 message('*** Installing packages, this may take 20 minutes! ***')
 if(!require(pacman)) install.packages("pacman")
-pacman::p_load(reticulate, dplyr, parallel, bigsnpr, ggplot2, readr, bigparallelr, hexbin, skimr, tidyverse, arrow)
-message('*** Finished installing packages! ***')
+pacman::p_load(tidyverse)
+
+#pacman::p_load(reticulate, dplyr, parallel, bigsnpr, ggplot2, readr, bigparallelr, hexbin, skimr, tidyverse, arrow)
+#message('*** Finished installing packages! ***')
 
 # get individuals in PCA reference
-data_path <- "/mnt/project/users/stevenpur/exom_test/"
-ref_iid_file <- paste0(data_path, "testing_pca.tsv")
-ref_iid <- read_pca_ind(ref_iid_file, "IID")
+#ref_iid_file <-"testing_pca.tsv"
+#ref_iid <- read_pca_ind(ref_iid_file, "IID")
 
 # read the gentoype file
-bedfile <- paste0(data_path, "ukb22418_merged_c1_22_v2_merged_qc_pruned.bed")
-obj.bed <- bed(bedfile)
+#bedfile <- paste0("ukb22418_merged_c1_22_v2_merged_qc_pruned.bed")
+#obj.bed <- bed(bedfile)
 
 # project the PCA from reference individuals to all individuals
-options(bigstatsr.check.parallel.blas = FALSE)
-ncores <- 15
-assert_cores(ncores)
-pca.project <- bed_projectPCA(
-  obj.bed,
-  obj.bed,
-  k = 10,
-  ind.row.ref = which(obj.bed$fam$sample.ID %in% ref_iid),
-  ncores = ncores
-)
+#options(bigstatsr.check.parallel.blas = FALSE)
+#ncores <- 15
+#assert_cores(ncores)
+#pca.project <- bed_projectPCA(
+#  obj.bed,
+#  obj.bed,
+#  k = 10,
+#  ind.row.ref = which(obj.bed$fam$sample.ID %in% ref_iid),
+#  ncores = ncores
+#)
 # save the PCA results
 saveRDS(pca.project, file = "pca_project.rds")
