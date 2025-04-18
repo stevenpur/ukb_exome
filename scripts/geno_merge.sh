@@ -1,6 +1,5 @@
 # --------------------
-# Notes: This script is meant to produce the genotype data needed for step 1 of REGENIE.
-#        The script merge all chromosomes after the SNP QC and LD pruning. This is all done in DNA Nexus platform.
+# Notes: The script merge all chromosomes after the SNP QC and LD pruning.
 # --------------------
 
 source ~/ukb_rap/config.sh
@@ -19,7 +18,17 @@ output_file_qc="ukb22418_merged_c1_22_v2_merged_qc"
 output_file_pruned="ukb22418_merged_c1_22_v2_merged_qc_pruned"
 
 # command to merge, QC, and prune
-plink_cmd="ls *bed | sed 's/.bed//g' > merge_list.txt
+plink_cmd=""
+for chr in {1..22}
+do
+    # concat the plink command
+    plink_cmd+="plink --bfile ukb22418_c${chr}_b0_v2 \
+        --extract rel_rsid.txt \
+        --make-bed \
+        --out ukb22418_c${chr}_rel
+    "
+done
+plink_cmd+="ls *_rel.bed | sed 's/.bed//g' > merge_list.txt
     plink --merge-list merge_list.txt \
         --make-bed \
         --out ${output_file_merged}
@@ -29,18 +38,14 @@ plink_cmd="ls *bed | sed 's/.bed//g' > merge_list.txt
         --hwe 1e-15 \
         --mind 0.1 \
         --geno 0.1 \
-        --indep-pairwise 1000 100 0.9 \
         --make-bed \
-        --out ${output_file_qc}
-    plink --bfile ${output_file_qc} \
-        --extract ${output_file_qc}.prune.in \
-        --make-bed \
-        --out ${output_file_pruned}"
+        --out ${output_file_qc}"
 
 echo $plink_cmd
 
 # run command
 dx run swiss-army-knife "${input_cmd[@]}" \
+    -iin="${user_dir}/exom_test/rel_rsid.txt" \
     -icmd="$plink_cmd" \
     --destination "${user_dir}/exom_test" \
     --name gt_preprocess \
@@ -48,12 +53,13 @@ dx run swiss-army-knife "${input_cmd[@]}" \
     --yes \
     --watch \
     --priority normal \
+    --instance-type mem1_ssd1_v2_x16 \
     --wait
 
 # clean the intermediate files
-dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged.bed"
-dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged.bim"
-dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged.fam"
-dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged_qc.bed"
-dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged_qc.bim"
-dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged_qc.fam"
+#dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged.bed"
+#dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged.bim"
+#dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged.fam"
+#dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged_qc.bed"
+#dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged_qc.bim"
+#dx rm "${user_dir}/exom_test/ukb22418_merged_c1_22_v2_merged_qc.fam"

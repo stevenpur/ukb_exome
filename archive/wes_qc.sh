@@ -16,7 +16,7 @@ for chr in {1..22}; do
     
     dx run swiss-army-knife \
         -iin="${exom_plink_dir}/ukb23158_c${chr}_b0_v1.bed" \
-        -iin="${exom_plink_dir}/ukb23158_c${chr}_ㄏb0_v1.bim" \
+        -iin="${exom_plink_dir}/ukb23158_c${chr}_b0_v1.bim" \
         -iin="${exom_plink_dir}/ukb23158_c${chr}_b0_v1.fam" \
         -iin="${data_file_dir}/testing.phe" \
         -icmd="${run_plink_wes}" \

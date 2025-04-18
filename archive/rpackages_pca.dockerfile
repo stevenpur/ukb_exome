@@ -8,7 +8,6 @@ WORKDIR /usr/src/app
 RUN Rscript -e "install.packages('reticulate')" \
     -e "install.packages('dplyr')" \
     -e "install.packages('parallel')" \
-    -e "install.packages('bigsnpr')" \
     -e "install.packages('ggplot2')" \
     -e "install.packages('readr')" \
     -e "install.packages('bigparallelr')" \
@@ -16,5 +15,3 @@ RUN Rscript -e "install.packages('reticulate')" \
     -e "install.packages('skimr')" \
     -e "install.packages('tidyverse')" \
     -e "install.packages('arrow')"
-    # Add as many packages as you need
-    # -e "install.packages('packageN')"
