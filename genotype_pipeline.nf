@@ -32,46 +32,20 @@ process mergeChromosomes {
     input:
     path "*_c{1..22}_b0_v2.{bed,bim,fam}" from ch_input_files
     path rel_rsid from params.rel_rsid
+    path "scripts/geno_merge.sh" from "${projectDir}/scripts/geno_merge.sh"
     
     output:
     path "ukb22418_merged_c1_22_v2_merged.{bed,bim,fam}" into merged_files
     
     script:
     """
-    # Create merge list
-    for chr in {1..22}
-    do
-        plink_cmd="plink --bfile ukb22418_c\${chr}_b0_v2 \\
-            --extract ${rel_rsid} \\
-            --make-bed \\
-            --out ukb22418_c\${chr}_rel"
-            
-        dx run swiss-army-knife \
-            -iin=ukb22418_c\${chr}_b0_v2.bed \
-            -iin=ukb22418_c\${chr}_b0_v2.bim \
-            -iin=ukb22418_c\${chr}_b0_v2.fam \
-            -iin=${rel_rsid} \
-            -icmd="\$plink_cmd" \
-            --destination . \
-            --instance-type ${params.dx_instance} \
-            --yes
-    done
+    # Set environment variables for the script
+    export gt_dir="${params.gt_dir}"
+    export user_dir="${params.output_dir}"
+    export rel_rsid="${rel_rsid}"
     
-    ls *_rel.bed | sed 's/.bed//g' > merge_list.txt
-    
-    merge_cmd="plink --merge-list merge_list.txt \\
-        --make-bed \\
-        --out ukb22418_merged_c1_22_v2_merged"
-        
-    dx run swiss-army-knife \
-        -iin=merge_list.txt \
-        -iin=*_rel.bed \
-        -iin=*_rel.bim \
-        -iin=*_rel.fam \
-        -icmd="\$merge_cmd" \
-        --destination . \
-        --instance-type ${params.dx_instance} \
-        --yes
+    # Run the merge script
+    bash scripts/geno_merge.sh
     """
 }
 
@@ -81,43 +55,23 @@ process performQC {
     
     input:
     path "ukb22418_merged_c1_22_v2_merged.{bed,bim,fam}" from merged_files
-    
-    output:
-    path "ukb22418_merged_c1_22_v2_merged_qc.{bed,bim,fam}" into qc_files
-    
-    script:
-    """
-    plink --bfile ukb22418_merged_c1_22_v2_merged \\
-        --mac ${params.mac} \\
-        --maf ${params.maf} \\
-        --hwe ${params.hwe} \\
-        --mind ${params.mind} \\
-        --geno ${params.geno} \\
-        --make-bed \\
-        --out ukb22418_merged_c1_22_v2_merged_qc
-    """
-}
-
-// Process to perform LD pruning
-process performPruning {
-    publishDir "${params.output_dir}/pruned", mode: 'copy'
-    
-    input:
-    path "ukb22418_merged_c1_22_v2_merged_qc.{bed,bim,fam}" from qc_files
+    path "scripts/perform_qc.sh" from "${projectDir}/scripts/perform_qc.sh"
     
     output:
     path "ukb22418_merged_c1_22_v2_merged_qc_pruned.{bed,bim,fam}"
     
     script:
     """
-    plink --bfile ukb22418_merged_c1_22_v2_merged_qc \\
-        --indep-pairwise 50 5 0.2 \\
-        --out ukb22418_merged_c1_22_v2_merged_qc_pruned
+    # Set environment variables for the script
+    export mac=${params.mac}
+    export maf=${params.maf}
+    export hwe=${params.hwe}
+    export mind=${params.mind}
+    export geno=${params.geno}
+    export user_dir="${params.output_dir}"
     
-    plink --bfile ukb22418_merged_c1_22_v2_merged_qc \\
-        --extract ukb22418_merged_c1_22_v2_merged_qc_pruned.prune.in \\
-        --make-bed \\
-        --out ukb22418_merged_c1_22_v2_merged_qc_pruned
+    # Run the QC script
+    bash scripts/perform_qc.sh ukb22418_merged_c1_22_v2_merged
     """
 }
 
@@ -133,5 +87,4 @@ workflow {
     // Run processes
     mergeChromosomes()
     performQC()
-    performPruning()
 } 
