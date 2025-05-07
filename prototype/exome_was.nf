@@ -11,42 +11,28 @@ nextflow.enable.dsl=2
 
 // Default parameters
 // Input parameters
-output_dir = "/users/steven/"
-exome_dir = "/Bulk/Exome sequences/Population level exome OQFE variants, PLINK format - final release"
-filter_90pct10dp_dir = "/Bulk/Exome sequences/Population level exome OQFE variants, PLINK format - final release/helper_files/"
-filter_90pct10dp_name = "ukb23158_500k_OQFE.90pct10dp_qc_variants.txt"
-gt_dir = "/Bulk/Genotype Results/Genotype calls"
-// DNA Nexus parameters
-dx_instance = "mem1_ssd1_v2_x16"
-
 // Process to filter 90pct10dp variants
 process FILTER_90PCT10DP {
+    publishDir "${params.work_dir}", mode: 'copy'
+
     input:
     val chr
-    
+
+    output:
+    tuple val(chr), file("90pct10dp_results_c${chr}.txt")
     script:
     """
-    # Construct PLINK command to filter variants
-    plink_cmd="plink --bfile ukb23158_c${chr}_b0_v1 \
-        --extract ${filter_90pct10dp_name} \
-        --make-bed \
-        --out ukb23158_c${chr}_b0_v1_filtered"
-    
-    # Run command with dx swiss-army-knife
-    dx run swiss-army-knife \
-        -iin="${exome_dir}/ukb23158_c${chr}_b0_v1.bed" \
-        -iin="${exome_dir}/ukb23158_c${chr}_b0_v1.bim" \
-        -iin="${exome_dir}/ukb23158_c${chr}_b0_v1.fam" \
-        -iin="${filter_90pct10dp_dir}/${filter_90pct10dp_name}" \
-        -icmd="\${plink_cmd}" \
-        --destination "${output_dir}/" \
-        --instance-type ${dx_instance} \
-        --yes
+    python ${params.code_dir}/90pct10dp.py \
+        --exome_dir "${params.exome_dir}" \
+        --exome_helper_dir "${params.exome_helper_dir}" \
+        --filter_90pct10dp_name "${params.filter_90pct10dp_name}" \
+        --output_dir "${params.output_dir}" \
+        --chr ${chr}
     """
 }
 
 process CHR_GT_MERGE {
-    publishDir "${HOME}/ukb_rap/ukb_exome/testing", mode: 'copy'
+    publishDir "${params.work_dir}", mode: 'copy'
 
     input:
     val chrs
@@ -56,70 +42,94 @@ process CHR_GT_MERGE {
     
     script:
     """
-    python ${HOME}/ukb_rap/ukb_exome/scripts/chr_merge.py ${chrs} ${gt_dir} ${output_dir} ${dx_instance}
+    python ${params.code_dir}/chr_merge.py \
+        --chrs ${chrs} \
+        --gt_dir "${params.gt_dir}" \
+        --output_dir "${params.output_dir}" \
+        --dx_instance "${params.dx_instance}"
     """
 }
 
 process SNP_QC {
-    publishDir "${HOME}/ukb_rap/ukb_exome/testing", mode: 'copy'
+    publishDir "${params.work_dir}", mode: 'copy'
 
     input:
-    file "merged_results.txt"
+    file merged_results_file
+    file pheno_desc_file
     
     output:
     file "qc_results.txt"
     
     script:
     """
-    # get the prefix from merged_result.txt
-    prefix=$(tail -n 1 merged_results.txt)
-    merged_dir=$(head -n 1 merged_results.txt)
-    plink_cmd="plink --bfile ${prefix} \
-        --mac 10 \
-        --maf 0.01 \
-        --mind 0.01 \
-        --geno 0.01 \
-        --hwe 0.00001 \
-        --indep 50 5 2 \
-        --make-bed \
-        --out ${prefix}_qc
-        plink --bfile ${prefix}_qc \
-            --extract ${prefix}_qc.prune.in \
-            --make-bed \
-            --out ${prefix}_qc_pruned"
-
-    # Run command with dx swiss-army-knife
-    dx run swiss-army-knife \
-        -iin="${merged_dir}/${prefix}.bed" \
-        -iin="${merged_dir}/${prefix}.bim" \
-        -iin="${merged_dir}/${prefix}.fam" \
-        -icmd="\${plink_cmd}" \
-        --destination "${output_dir}/" \
-        --wait
-    exit_code=\$?
-    if [ \$exit_code -ne 0 ]; then
-        echo "Error: qc failed" > qc_results.txt
-    else
-        echo ${output_dir} > qc_results.txt
-        echo ${prefix}_qc_pruned >> qc_results.txt
-    fi
+    sh ${params.code_dir}/snp_qc.sh \
+        --merged_results ${merged_results_file} \
+        --pheno_desc ${pheno_desc_file} \
+        --output_dir ${params.output_dir}
     """
 }
 
+process REGENIE_STEP1 {
+    publishDir "${params.work_dir}", mode: 'copy'
+
+    input:
+    file gt_input_files
+    file pheno_desc_file
+    
+    output:
+    file "regenie_step1_results.txt"
+    
+    script:
+    """
+    sh ${params.code_dir}/regenie_step1.sh \
+        --gt_input_files ${gt_input_files} \
+        --pheno_desc ${pheno_desc_file} \
+        --output_dir ${params.output_dir}
+    """
+}
+
+process REGENIE_STEP2 {
+    publishDir "${params.work_dir}", mode: 'copy'
+
+    input:
+    file step1_output_results
+    file pheno_desc_file
+    tuple val(chr), file(exome_qc_results)
+
+    output:
+    file("regenie_step2_results_c${chr}.txt")
+    
+    script:
+    """
+    python ${params.code_dir}/regenie_step2.py \
+        --regenie_step1_results ${step1_output_results} \
+        --exome_qc_results ${exome_qc_results} \
+        --exome_helper_dir "${params.exome_helper_dir}" \
+        --pheno_desc ${pheno_desc_file} \
+        --out_dir ${params.output_dir} \
+        --chr ${chr}
+    """
+}
+
+
 // Main workflow
 workflow {
+    ch_pheno_desc_file = Channel.value(file(params.pheno_desc_file))
     // Create channel for chromosomes
     ch_chromosomes = Channel.of(21, 22)
     
-    // Run the filter process
-    FILTER_90PCT10DP(ch_chromosomes)
+    ch_exome_qc = FILTER_90PCT10DP(ch_chromosomes)
     
-    // Collect all chromosomes into a single value before merging
-    ch_chromosomes
+    ch_merged_gt = CHR_GT_MERGE(ch_chromosomes
         .collect()
-        .map { chromosomes -> chromosomes.join(' ') }
-        | CHR_GT_MERGE
-        | SNP_QC
+        .map { chromosomes -> chromosomes.join(',') }
+    )
+    
+    ch_snp_qc = SNP_QC(ch_merged_gt, ch_pheno_desc_file)
+
+    ch_regenie_step1 = REGENIE_STEP1(ch_snp_qc, ch_pheno_desc_file)
+
+    ch_regenie_step2 = REGENIE_STEP2(ch_regenie_step1, ch_pheno_desc_file, ch_exome_qc)
 }
 
  

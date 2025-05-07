@@ -1,63 +1,41 @@
 #!/usr/bin/env nextflow
 
 /*
- * Simple test pipeline for UK Biobank chromosome 1
- * This pipeline performs basic operations on chromosome 1 data
+ * Genotype Pipeline for UK Biobank Data
+ * This pipeline performs:
+ * 1. Merging of chromosome-wise genotype files
+ * 2. SNP QC and pruning
  */
 
+nextflow.enable.dsl=2
+
 // Default parameters
-params {
-    // Input parameters
-    gt_dir = "/mnt/project/Bulk/Genotype Results/Genotype calls/"
-    out_dir = "/mnt/project/users/steven"
-}
+// Input parameters
+output_dir = "/users/steven/"
+exome_dir = "/Bulk/Exome sequences/Population level exome OQFE variants, PLINK format - final release"
+filter_90pct10dp_dir = "/Bulk/Exome sequences/Population level exome OQFE variants, PLINK format - final release/helper_files/"
+filter_90pct10dp_name = "ukb23158_500k_OQFE.90pct10dp_qc_variants.txt"
+// DNA Nexus parameters
+dx_instance = "mem1_ssd1_v2_x16"
+gt_dir = "/Bulk/Genotype Results/Genotype calls"
 
-// Process to perform basic QC on chromosome 1
-process basicQC {
-    publishDir "${params.out_dir}/", mode: 'copy'
-    
+// a simple process that calculates the freq of a chromosome
+process CHR_FREQ {
+    publishDir "${HOME}/ukb_rap/ukb_exome/testing", mode: 'copy'
+
     input:
-    path "ukb22418_c1_b0_v2.{bed,bim,fam}" from ch_input_files
+    val chr
     
     output:
-    path "ukb22418_c1_b0_v2_qc.{bed,bim,fam}" into qc_files
+    file "hello2.txt"
     
     script:
     """
-    # Simple QC: remove SNPs with missing rate > 10%
-    plink --bfile ukb22418_c1_b0_v2 \\
-        --geno 0.1 \\
-        --make-bed \\
-        --out ukb22418_c1_b0_v2_qc
+    sh ${HOME}/ukb_rap/ukb_exome/testing/simple_freq.sh ${chr} ${exome_dir} ${output_dir} ${dx_instance}
     """
 }
 
-// Process to calculate basic statistics
-process calculateStats {
-    publishDir "${params.out_dir}/", mode: 'copy'
-    
-    input:
-    path "ukb22418_c1_b0_v2_qc.{bed,bim,fam}" from qc_files
-    
-    output:
-    path "ukb22418_c1_b0_v2_qc_stats.txt"
-    
-    script:
-    """
-    # Calculate basic statistics
-    plink --bfile ukb22418_c1_b0_v2_qc \\
-        --freq \\
-        --missing \\
-        --hardy \\
-        --out ukb22418_c1_b0_v2_qc_stats
-    """
-}
 
-// Workflow
 workflow {
-    // Simple channel for chromosome 1 files
-    ch_input_files = Channel.fromPath("${params.gt_dir}/ukb22418_c1_b0_v2.{bed,bim,fam}")
-    // Run processes
-    basicQC()
-    calculateStats()
-} 
+    CHR_FREQ(21)
+}

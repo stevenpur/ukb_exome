@@ -1,6 +1,23 @@
-gt_input_files=$1
-pheno_results_file=$2
-output_dir=$3
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --gt_input_files)
+            gt_input_files="$2"
+            shift 2
+            ;;
+        --pheno_desc)
+            pheno_results_file="$2"
+            shift 2
+            ;;
+        --output_dir)
+            output_dir="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown parameter: $1"
+            exit 1
+            ;;
+    esac
+done
 
 gt_dir=$(head -n 1 ${gt_input_files})
 gt_prefix=$(tail -n 1 ${gt_input_files})
@@ -32,6 +49,7 @@ dx run swiss-army-knife \
     -iin="${pheno_dir}/${pheno_file}" \
     -iin="${pheno_dir}/${covar_file}" \
     -icmd="${regenie_step1_cmd}" \
+    --name "regenie_step1" \
     --instance-type "mem1_ssd1_v2_x8" \
     --priority high \
     --destination "${output_dir}/" --yes --wait

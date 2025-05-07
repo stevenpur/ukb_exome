@@ -3,29 +3,33 @@
 import sys
 import subprocess
 import os
+import argparse
 
 def main():
-    # Check if correct number of arguments is provided
-    if len(sys.argv) != 5:
-        print("Usage: python chr_merge.py <chromosomes> <genotype_dir> <output_dir> <dx_instance>")
-        sys.exit(1)
-
     # Parse arguments
-    chrs = sys.argv[1]
-    gt_dir = sys.argv[2]
-    output_dir = sys.argv[3]
-    dx_instance = sys.argv[4]
-    prefix = "gt_merged_chr_v2"  # Define prefix before using it
-
+    parser = argparse.ArgumentParser(description='Merge chromosome files using PLINK')
+    parser.add_argument('--chrs', required=True, help='Comma-separated list of chromosomes')
+    parser.add_argument('--gt_dir', required=True, help='Directory containing genotype files')
+    parser.add_argument('--output_dir', required=True, help='Output directory')
+    parser.add_argument('--dx_instance', required=True, help='DNAnexus instance type')
+    
+    args = parser.parse_args()
+    
+    # Get arguments
+    chrs = args.chrs
+    gt_dir = args.gt_dir
+    output_dir = args.output_dir
+    dx_instance = args.dx_instance
+    prefix = "gt_merged_chr"  # Define prefix before using it
     # Split chromosomes into array
     chr_array = chrs.split(',')
 
-    # Build input files string for dx command
-    in_files = ""
+    # Build input files for dx command
+    in_files = []
     for chr_num in chr_array:
         in_prefix = gt_dir + "/ukb22418_c" + chr_num + "_b0_v2"
         for suffix in ["bed", "bim", "fam"]:
-            in_files += " -iin=\"" + in_prefix + "." + suffix + "\""
+            in_files.extend([f"-iin={in_prefix}.{suffix}"])
 
     # Create PLINK merge command
     merge_cmd = f"""
@@ -36,20 +40,31 @@ def main():
     --out {prefix}
     """
 
-    # Build and execute dx command
-    dx_cmd = f"dx run swiss-army-knife {in_files} -icmd=\"{merge_cmd}\" --destination \"{output_dir}/\" --instance-type {dx_instance} --wait --yes"
-    print(dx_cmd)
+    # Build dx command as a list
+    dx_cmd = [
+        "dx", "run", "swiss-army-knife",
+        *in_files,
+        f"-icmd={merge_cmd}",
+        "--destination", f"{output_dir}/",
+        "--instance-type", dx_instance,
+        "--name", "gt_merge",
+        "--wait",
+        "--yes"
+    ]
 
-    # Execute the dx command and wait for completion, if failed, exit with error
-    result = subprocess.run(dx_cmd, shell=True, check=True)
-    if result.returncode != 0:
-        print("Error: Command failed")
+    # Execute the dx command with error handling
+    try:
+        result = subprocess.run(dx_cmd, check=True)
+        # Print the output prefix and directory into a file
+        with open("merged_results.txt", "w") as f:
+            f.write(f"{output_dir}\n")
+            f.write(f"{prefix}\n")
+    except subprocess.CalledProcessError as e:
+        print(f"Error: Command failed with exit code {e.returncode}")
         sys.exit(1)
-
-    # Print the output prefix and directory into a file
-    with open("merged_results.txt", "w") as f:
-        f.write(f"{output_dir}\n")
-        f.write(f"{prefix}\n")
+    except Exception as e:
+        print(f"Error: An unexpected error occurred: {str(e)}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main() 
