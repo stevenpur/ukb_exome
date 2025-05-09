@@ -1,3 +1,0 @@
-/users/steven/
-phenotype.csv
-covariate.csv

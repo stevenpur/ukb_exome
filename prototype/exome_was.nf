@@ -11,25 +11,6 @@ nextflow.enable.dsl=2
 
 // Default parameters
 // Input parameters
-// Process to filter 90pct10dp variants
-process FILTER_90PCT10DP {
-    publishDir "${params.work_dir}", mode: 'copy'
-
-    input:
-    val chr
-
-    output:
-    tuple val(chr), file("90pct10dp_results_c${chr}.txt")
-    script:
-    """
-    python ${params.code_dir}/90pct10dp.py \
-        --exome_dir "${params.exome_dir}" \
-        --exome_helper_dir "${params.exome_helper_dir}" \
-        --filter_90pct10dp_name "${params.filter_90pct10dp_name}" \
-        --output_dir "${params.output_dir}" \
-        --chr ${chr}
-    """
-}
 
 process CHR_GT_MERGE {
     publishDir "${params.work_dir}", mode: 'copy'
@@ -62,7 +43,8 @@ process SNP_QC {
     
     script:
     """
-    sh ${params.code_dir}/snp_qc.sh \
+    echo "output_dir: ${params.output_dir}"
+    python ${params.code_dir}/snp_qc.py \
         --merged_results ${merged_results_file} \
         --pheno_desc ${pheno_desc_file} \
         --output_dir ${params.output_dir}
@@ -81,7 +63,7 @@ process REGENIE_STEP1 {
     
     script:
     """
-    sh ${params.code_dir}/regenie_step1.sh \
+    python ${params.code_dir}/regenie_step1.py \
         --gt_input_files ${gt_input_files} \
         --pheno_desc ${pheno_desc_file} \
         --output_dir ${params.output_dir}
@@ -114,22 +96,21 @@ process REGENIE_STEP2 {
 
 // Main workflow
 workflow {
-    ch_pheno_desc_file = Channel.value(file(params.pheno_desc_file))
-    // Create channel for chromosomes
-    ch_chromosomes = Channel.of(21, 22)
+    // Input channels
+    pheno_desc_channel = Channel.value(file(params.pheno_desc_file))
+    chromosome_channel = Channel.of(21, 22)
     
-    ch_exome_qc = FILTER_90PCT10DP(ch_chromosomes)
     
-    ch_merged_gt = CHR_GT_MERGE(ch_chromosomes
+    // Merge chromosomes into a single string for GT merge
+    merged_chromosomes_channel = chromosome_channel
         .collect()
         .map { chromosomes -> chromosomes.join(',') }
-    )
     
-    ch_snp_qc = SNP_QC(ch_merged_gt, ch_pheno_desc_file)
-
-    ch_regenie_step1 = REGENIE_STEP1(ch_snp_qc, ch_pheno_desc_file)
-
-    ch_regenie_step2 = REGENIE_STEP2(ch_regenie_step1, ch_pheno_desc_file, ch_exome_qc)
+    // Execute remaining processes
+    merged_gt_channel = CHR_GT_MERGE(merged_chromosomes_channel)
+    snp_qc_channel = SNP_QC(merged_gt_channel, pheno_desc_channel)
+    regenie_step1_channel = REGENIE_STEP1(snp_qc_channel, pheno_desc_channel)
+    regenie_step2_channel = REGENIE_STEP2(regenie_step1_channel, pheno_desc_channel, exome_qc_channel)
 }
 
  

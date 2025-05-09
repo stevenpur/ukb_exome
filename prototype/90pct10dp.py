@@ -16,7 +16,7 @@ def main():
 
     # Construct the PLINK command
     plink_cmd = f"plink --bfile ukb23158_c{args.chr}_b0_v1 " \
-                f"--extract {args.filter_90pct10dp_name} " \
+                f"--exclude {args.filter_90pct10dp_name} " \
                 f"--make-bed " \
                 f"--out ukb23158_c{args.chr}_b0_v1_filtered"
 

@@ -64,13 +64,15 @@ def main():
     --set-list ukb23158_500k_OQFE_chr{args.chr}.sets.txt.gz \
     --anno-file ukb23158_500k_OQFE.annotations.txt.gz \
     --mask-def ukb23158_500k_OQFE.masks \
-    --extract ukb23158_500k_OQFE.90pct10dp_qc_variants.txt \
+    --exclude ukb23158_500k_OQFE.90pct10dp_qc_variants.txt \
     --pred {regenie_step1_prefix}_pred.list \
     --nauto 22 \
     --chr {args.chr} \
     --aaf-bins 0.01,0.001 \
     --bsize 200 \
-    --out {regenie_step1_prefix}_regenie_step2
+    --out {regenie_step1_prefix}_c{args.chr}_step2 \
+    --check-burden-files \
+    --write-mask-snplist
     """
 
     # Combine filter and regenie commands
