@@ -97,7 +97,8 @@ if __name__ == "__main__":
         "eid" : "IID",
         "p31" : "sex",
         "p34" : "year_birth",
-        "p90012": "overall_activity",
+        "p894": "self_reported_moderate",
+        "p896": "self_reported_vigorous",
         "p22001": "genetic_sex",
         "p22006": "is_white_british",
         "p22019": "sex_chrom_aneuploidy",
@@ -132,7 +133,7 @@ if __name__ == "__main__":
     # df_pca_qced_exom = filter_on_bulk(df_pca_qced, exom_file)
 
     # get the trait data
-    trait_data = df_qced_exom[["FID", "IID", "overall_activity"]]
+    trait_data = df_qced_exom[["FID", "IID", "overall_activity", "self_reported_moderate", "self_reported_vigorous"]]
     trait_data.to_csv("phenotype.csv", index = False, sep = " ")
 
     # get the covariate data

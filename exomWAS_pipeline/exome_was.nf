@@ -39,7 +39,8 @@ process SNP_QC {
     file pheno_desc_file
     
     output:
-    file "qc_results.txt"
+    // file "qc_results.txt"
+    file "*.txt"
     
     script:
     """
@@ -76,7 +77,7 @@ process REGENIE_STEP2 {
     input:
     file step1_output_results
     file pheno_desc_file
-    tuple val(chr), file(exome_qc_results)
+    val chr
 
     output:
     file("regenie_step2_results_c${chr}.txt")
@@ -85,7 +86,7 @@ process REGENIE_STEP2 {
     """
     python ${params.code_dir}/regenie_step2.py \
         --regenie_step1_results ${step1_output_results} \
-        --exome_qc_results ${exome_qc_results} \
+        --exome_dir "${params.exome_dir}" \
         --exome_helper_dir "${params.exome_helper_dir}" \
         --pheno_desc ${pheno_desc_file} \
         --out_dir ${params.output_dir} \
@@ -98,7 +99,7 @@ process REGENIE_STEP2 {
 workflow {
     // Input channels
     pheno_desc_channel = Channel.value(file(params.pheno_desc_file))
-    chromosome_channel = Channel.of(21, 22)
+    chromosome_channel = Channel.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22)
     
     
     // Merge chromosomes into a single string for GT merge
@@ -110,7 +111,7 @@ workflow {
     merged_gt_channel = CHR_GT_MERGE(merged_chromosomes_channel)
     snp_qc_channel = SNP_QC(merged_gt_channel, pheno_desc_channel)
     regenie_step1_channel = REGENIE_STEP1(snp_qc_channel, pheno_desc_channel)
-    regenie_step2_channel = REGENIE_STEP2(regenie_step1_channel, pheno_desc_channel, exome_qc_channel)
+    regenie_step2_channel = REGENIE_STEP2(regenie_step1_channel, pheno_desc_channel, chromosome_channel)
 }
 
  
