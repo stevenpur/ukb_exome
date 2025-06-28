@@ -52,6 +52,28 @@ def main():
     """
 
     # Construct regenie command
+    # Original mask-based command (commented out):
+    # regenie_step2_cmd = f"""
+    # regenie \
+    # --step 2 \
+    # --bed ukb23158_c{args.chr}_b0_v1 \
+    # --phenoFile {pheno_file} \
+    # --covarFile {covar_file} \
+    # --pred {regenie_step1_prefix}_pred.list \
+    # --chr {args.chr} \
+    # --aaf-bins 0.01,0.001 \
+    # --set-list ukb23158_500k_OQFE_chr{args.chr}.sets.txt.gz \
+    # --anno-file ukb23158_500k_OQFE.annotations.txt.gz \
+    # --mask-def ukb23158_500k_OQFE.masks \
+    # --exclude ukb23158_500k_OQFE.90pct10dp_qc_variants.txt \
+    # --nauto 23 \
+    # --bsize 200 \
+    # --out {regenie_step1_prefix}_c{args.chr}_step2 \
+    # --check-burden-files \
+    # --write-mask-snplist
+    # """
+    
+    # Single variant analysis command:
     regenie_step2_cmd = f"""
     regenie \
     --step 2 \
@@ -61,15 +83,10 @@ def main():
     --pred {regenie_step1_prefix}_pred.list \
     --chr {args.chr} \
     --aaf-bins 0.01,0.001 \
-    --set-list ukb23158_500k_OQFE_chr{args.chr}.sets.txt.gz \
-    --anno-file ukb23158_500k_OQFE.annotations.txt.gz \
-    --mask-def ukb23158_500k_OQFE.masks \
     --exclude ukb23158_500k_OQFE.90pct10dp_qc_variants.txt \
     --nauto 23 \
     --bsize 200 \
-    --out {regenie_step1_prefix}_c{args.chr}_step2 \
-    --check-burden-files \
-    --write-mask-snplist
+    --out {regenie_step1_prefix}_c{args.chr}_singlevariant_step2
     """
 
     # Combine filter and regenie commands
