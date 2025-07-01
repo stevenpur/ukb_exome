@@ -43,20 +43,29 @@ def main():
 
     # bonferroni correction
     bonf_pval = 0.05 / len(df)
+    print(f"Bonferroni corrected p-value: {bonf_pval}")
+    nominal_thresh = bonf_pval * 100
+    print(f"Suggested threshold: {nominal_thresh}")
     if not is_log:
-        print(f"Bonferroni corrected p-value: {bonf_pval}")
         sig_hits = df[df[args.pval_col] < bonf_pval]
+        nominal_hits = df[df[args.pval_col] < nominal_thresh]
     else:
         bonf_pval = -1 * np.log10(bonf_pval)
-        print(f"Bonferroni corrected p-value (log transformed): {bonf_pval}")
+        nominal_thresh = -1 * np.log10(nominal_thresh)
         sig_hits = df[df[args.pval_col] > bonf_pval]
-
+        nominal_hits = df[df[args.pval_col] > nominal_thresh]
     print(f"Number of significant hits: {len(sig_hits)}")
+    print(f"Number of nominal hits: {len(nominal_hits)}")
+    # add a column to the both dataframes to indicate if the hit is nominal or significant
+    sig_hits['sig_type'] = 'significant'
+    nominal_hits['sig_type'] = 'nominal'
+    # concatenate the two dataframes
+    output_df = pd.concat([sig_hits, nominal_hits])
 
     # Write significant hits to file
     with open(args.output, 'w') as f:
         f.write(f"# Significance threshold: p < {bonf_pval}\n")
-    sig_hits.to_csv(args.output, sep=' ', index=False, mode='a')
+    output_df.to_csv(args.output, sep=' ', index=False, mode='a')
     
 
 if __name__ == "__main__":
