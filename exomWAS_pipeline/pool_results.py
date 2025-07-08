@@ -1,8 +1,8 @@
 # pool results from multiple chromosomes for each phenotype
 import argparse
 import os
-import pandas as pd
 import subprocess
+import sys
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Pool results from multiple chromosomes')
@@ -45,19 +45,31 @@ def main():
 
     # read all files in regenie_step2_dir
     for pheno in args.pheno.split(','):
-        fs_cmd = f"dx ls {regenie_step2_dir}/{regenie_step2_prefix}_c*_step2_{pheno}.regenie"
+        fs_cmd = f"dx ls {regenie_step2_dir}/{regenie_step2_prefix}_c*_singlevariant_step2_{pheno}.regenie"
         fs_output = subprocess.run(fs_cmd, shell=True, capture_output=True, text=True)
         files = fs_output.stdout.split('\n')[:-1]
         # Sort files by chromosome number
         files.sort(key=get_chr_num)
         in_files = [f'-iin={regenie_step2_dir}/{file}' for file in files]
-        # concat files
-        concat_cmd = f"cat {' '.join(files)} > {regenie_step2_prefix}_all_chr_step2_{pheno}.regenie"
+        
+        # Create concatenation command that handles headers properly
+        # First file: keep header, subsequent files: skip header (first line)
+        if len(files) > 0:
+            # Start with the first file (keeping its header)
+            concat_cmd = f"cp {files[0]} {regenie_step2_prefix}_all_chr_singlevariant_step2_{pheno}.regenie"
+            
+            # Add subsequent files without their headers
+            for file in files[1:]:
+                concat_cmd += f" && tail -n +2 {file} >> {regenie_step2_prefix}_all_chr_singlevariant_step2_{pheno}.regenie"
+        else:
+            # If no files found, create empty output file
+            concat_cmd = f"touch {regenie_step2_prefix}_all_chr_singlevariant_step2_{pheno}.regenie"
+        
         dx_cmd = [
             'dx', 'run', 'swiss-army-knife',
             *in_files,
             f'-icmd={concat_cmd}',
-            '--name', f'concat_regenie_step2_{pheno}',
+            '--name', f'concat_regenie_singlevariant_step2_{pheno}',
             '--destination', output_dir,
             '--yes',
             '--wait'
