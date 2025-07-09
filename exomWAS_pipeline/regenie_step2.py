@@ -3,6 +3,7 @@ import argparse
 import subprocess
 import sys
 import os
+import json
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run REGENIE step 2 analysis')
@@ -14,29 +15,29 @@ def parse_args():
     parser.add_argument('--chr', required=True, help='Chromosome number')
     return parser.parse_args()
 
-def read_first_line(file_path):
+def read_json_file(file_path):
     with open(file_path, 'r') as f:
-        return f.readline().strip()
-
-def read_last_line(file_path):
-    with open(file_path, 'r') as f:
-        return f.readlines()[-1].strip()
-
-def read_second_to_last_line(file_path):
-    with open(file_path, 'r') as f:
-        lines = f.readlines()
-        return lines[-2].strip()
+        return json.load(f)
 
 def main():
     args = parse_args()
 
     # Read input files
-    regenie_step1_dir = read_first_line(args.regenie_step1_results)
-    regenie_step1_prefix = read_last_line(args.regenie_step1_results)
+    regenie_step1_data = read_json_file(args.regenie_step1_results)
+    if regenie_step1_data["status"] != "success":
+        print(f"Error: REGENIE step 1 input error: {regenie_step1_data.get('message', 'Unknown error')}")
+        sys.exit(1)
+    regenie_step1_dir = regenie_step1_data["output_dir"]
+    regenie_step1_prefix = regenie_step1_data["prefix"]
     exome_dir = args.exome_dir
-    pheno_dir = read_first_line(args.pheno_desc)
-    pheno_file = read_second_to_last_line(args.pheno_desc)
-    covar_file = read_last_line(args.pheno_desc)
+
+    pheno_data = read_json_file(args.pheno_desc)
+    if pheno_data["status"] != "success":
+        print(f"Error: Phenotype file error: {pheno_data.get('message', 'Unknown error')}")
+        sys.exit(1)
+    pheno_dir = pheno_data["pheno_dir"]
+    pheno_file = pheno_data["pheno_file"]
+    covar_file = pheno_data["covar_file"]
 
     # Print input information
     print(f"regenie step 1 directory: {regenie_step1_dir}")
@@ -121,17 +122,27 @@ def main():
     ]
 
     # Run dx command
-    output_file = f"regenie_step2_results_c{args.chr}.txt"
+    output_file = f"regenie_step2_results_c{args.chr}.json"
     try:
         subprocess.run(dx_cmd, check=True)
         # Write success output
+        output_data = {
+            "output_dir": args.out_dir,
+            "prefix": f"{regenie_step1_prefix}_c{args.chr}_step2",
+            "status": "success"
+        }
         with open(output_file, 'w') as f:
-            f.write(f"{args.out_dir}\n")
-            f.write(f"{regenie_step1_prefix}_c{args.chr}_step2\n")
-    except subprocess.CalledProcessError:
+            json.dump(output_data, f, indent=2)
+    except subprocess.CalledProcessError as e:
         # Write error output
+        error_data = {
+            "status": "error",
+            "error_type": "CalledProcessError",
+            "exit_code": e.returncode,
+            "message": "REGENIE step 2 failed"
+        }
         with open(output_file, 'w') as f:
-            f.write("Error: regenie step 2 failed\n")
+            json.dump(error_data, f, indent=2)
         sys.exit(1)
 
 if __name__ == "__main__":

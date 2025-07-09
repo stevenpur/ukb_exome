@@ -3,6 +3,7 @@
 import argparse
 import subprocess
 import sys
+import json
 from pathlib import Path
 
 def parse_args():
@@ -12,29 +13,30 @@ def parse_args():
     parser.add_argument('--output_dir', required=True, help='Output directory')
     return parser.parse_args()
 
-def read_first_line(file_path):
+def read_json_file(file_path):
     with open(file_path, 'r') as f:
-        return f.readline().strip()
-
-def read_last_line(file_path):
-    with open(file_path, 'r') as f:
-        lines = f.readlines()
-        return lines[-1].strip()
-
-def read_second_last_line(file_path):
-    with open(file_path, 'r') as f:
-        lines = f.readlines()
-        return lines[-2].strip()
+        return json.load(f)
 
 def main():
     args = parse_args()
     
     # Read input files
-    gt_dir = read_first_line(args.gt_input_files)
-    gt_prefix = read_last_line(args.gt_input_files)
-    pheno_dir = read_first_line(args.pheno_desc)
-    pheno_file = read_second_last_line(args.pheno_desc)
-    covar_file = read_last_line(args.pheno_desc)
+    gt_data = read_json_file(args.gt_input_files)
+    if gt_data["status"] != "success":
+        print(f"Error: Genotype input error: {gt_data.get('message', 'Unknown error')}")
+        sys.exit(1)
+    
+    gt_dir = gt_data["output_dir"]
+    gt_prefix = gt_data["prefix"]
+    
+    pheno_data = read_json_file(args.pheno_desc)
+    if pheno_data["status"] != "success":
+        print(f"Error: Phenotype file error: {pheno_data.get('message', 'Unknown error')}")
+        sys.exit(1)
+    
+    pheno_dir = pheno_data["pheno_dir"]
+    pheno_file = pheno_data["pheno_file"]
+    covar_file = pheno_data["covar_file"]
 
     # Print input information
     print(f"gt_dir: {gt_dir}")
@@ -75,13 +77,23 @@ def main():
     try:
         subprocess.run(dx_cmd, check=True)
         # Write success to results file
-        with open("regenie_step1_results.txt", "w") as f:
-            f.write(f"{args.output_dir}\n")
-            f.write(f"{gt_prefix}_regenie_step1\n")
-    except subprocess.CalledProcessError:
+        output_data = {
+            "output_dir": args.output_dir,
+            "prefix": f"{gt_prefix}_regenie_step1",
+            "status": "success"
+        }
+        with open("regenie_step1_results.json", "w") as f:
+            json.dump(output_data, f, indent=2)
+    except subprocess.CalledProcessError as e:
         # Write error to results file
-        with open("regenie_step1_results.txt", "w") as f:
-            f.write("Error: regenie step 1 failed\n")
+        error_data = {
+            "status": "error",
+            "error_type": "CalledProcessError",
+            "exit_code": e.returncode,
+            "message": "REGENIE step 1 failed"
+        }
+        with open("regenie_step1_results.json", "w") as f:
+            json.dump(error_data, f, indent=2)
         sys.exit(1)
 
 if __name__ == "__main__":

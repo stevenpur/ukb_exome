@@ -4,6 +4,7 @@ import argparse
 import subprocess
 import os
 import sys
+import json
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run SNP QC using PLINK')
@@ -12,22 +13,30 @@ def parse_args():
     parser.add_argument('--output_dir', required=True, help='Output directory')
     return parser.parse_args()
 
-def read_file_lines(file_path):
+def read_json_file(file_path):
     with open(file_path, 'r') as f:
-        return [line.strip() for line in f.readlines()]
+        return json.load(f)
 
 def main():
     args = parse_args()
     
     # Read merged results file
-    merged_results = read_file_lines(args.merged_results)
-    merged_dir = merged_results[0]
-    merged_prefix = merged_results[-1]
+    merged_results = read_json_file(args.merged_results)
+    if merged_results["status"] != "success":
+        print(f"Error: Previous step failed: {merged_results.get('message', 'Unknown error')}")
+        sys.exit(1)
+    
+    merged_dir = merged_results["output_dir"]
+    merged_prefix = merged_results["prefix"]
     
     # Read phenotype results file
-    pheno_results = read_file_lines(args.pheno_desc)
-    pheno_dir = pheno_results[0]
-    pheno_file = pheno_results[-2]  # Second to last line
+    pheno_results = read_json_file(args.pheno_desc)
+    if pheno_results["status"] != "success":
+        print(f"Error: Phenotype file error: {pheno_results.get('message', 'Unknown error')}")
+        sys.exit(1)
+    
+    pheno_dir = pheno_results["pheno_dir"]
+    pheno_file = pheno_results["pheno_file"]
     
     print(f"merged_prefix: {merged_prefix}")
     print(f"merged_dir: {merged_dir}")
@@ -71,14 +80,24 @@ def main():
     
     try:
         subprocess.run(dx_cmd, check=True)
-        # Write success to qc_results.txt
-        with open('qc_results.txt', 'w') as f:
-            f.write(f'{args.output_dir}\n')
-            f.write(f'{merged_prefix}_qc_pruned\n')
-    except subprocess.CalledProcessError:
-        # Write error to qc_results.txt
-        with open('qc_results.txt', 'w') as f:
-            f.write('Error: qc failed\n')
+        # Write success to qc_results.json
+        output_data = {
+            "output_dir": args.output_dir,
+            "prefix": f"{merged_prefix}_qc_pruned",
+            "status": "success"
+        }
+        with open('qc_results.json', 'w') as f:
+            json.dump(output_data, f, indent=2)
+    except subprocess.CalledProcessError as e:
+        # Write error to qc_results.json
+        error_data = {
+            "status": "error",
+            "error_type": "CalledProcessError",
+            "exit_code": e.returncode,
+            "message": "SNP QC failed"
+        }
+        with open('qc_results.json', 'w') as f:
+            json.dump(error_data, f, indent=2)
         sys.exit(1)
 
 if __name__ == '__main__':

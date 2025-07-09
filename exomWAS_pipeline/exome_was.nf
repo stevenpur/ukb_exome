@@ -19,7 +19,7 @@ process CHR_GT_MERGE {
     val chrs
     
     output:
-    file "merged_results.txt"
+    file "merged_results.json"
     
     script:
     """
@@ -39,8 +39,7 @@ process SNP_QC {
     file pheno_desc_file
     
     output:
-    // file "qc_results.txt"
-    file "*.txt"
+    file "qc_results.json"
     
     script:
     """
@@ -60,7 +59,7 @@ process REGENIE_STEP1 {
     file pheno_desc_file
     
     output:
-    file "regenie_step1_results.txt"
+    file "regenie_step1_results.json"
     
     script:
     """

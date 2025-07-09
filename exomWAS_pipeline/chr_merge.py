@@ -4,6 +4,7 @@ import sys
 import subprocess
 import os
 import argparse
+import json
 
 def main():
     # Parse arguments
@@ -55,15 +56,34 @@ def main():
     # Execute the dx command with error handling
     try:
         result = subprocess.run(dx_cmd, check=True)
-        # Print the output prefix and directory into a file
-        with open("merged_results.txt", "w") as f:
-            f.write(f"{output_dir}\n")
-            f.write(f"{prefix}\n")
+        # Write output in JSON format
+        output_data = {
+            "output_dir": output_dir,
+            "prefix": prefix,
+            "status": "success"
+        }
+        with open("merged_results.json", "w") as f:
+            json.dump(output_data, f, indent=2)
     except subprocess.CalledProcessError as e:
-        print(f"Error: Command failed with exit code {e.returncode}")
+        # Write error in JSON format
+        error_data = {
+            "status": "error",
+            "error_type": "CalledProcessError",
+            "exit_code": e.returncode,
+            "message": f"Command failed with exit code {e.returncode}"
+        }
+        with open("merged_results.json", "w") as f:
+            json.dump(error_data, f, indent=2)
         sys.exit(1)
     except Exception as e:
-        print(f"Error: An unexpected error occurred: {str(e)}")
+        # Write error in JSON format
+        error_data = {
+            "status": "error",
+            "error_type": "Exception",
+            "message": str(e)
+        }
+        with open("merged_results.json", "w") as f:
+            json.dump(error_data, f, indent=2)
         sys.exit(1)
 
 if __name__ == "__main__":
